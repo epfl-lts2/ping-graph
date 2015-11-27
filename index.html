@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Force directed graph basesd on ping</title>
+
+        <style>
+            .node {
+              stroke: #fff;
+              stroke-width: 1.5px;
+            }
+
+            .link {
+              stroke: #999;
+              stroke-opacity: .4;
+            }
+
+            body {
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>
+
+        <p>
+            This is a force directed graph based on pings from <a href="https://wondernetwork.com/pings">https://wondernetwork.com/pings</a>.<br />
+            You may need a fast brower since there is a lot of links. <a href="https://github.com/epfl-lts2/ping-graph">GitHub's repository</a>.
+        </p>
+
+        <script src="//d3js.org/d3.v3.min.js"></script>
+        <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+        <script type="text/javascript">
+
+            var width = $(window).width() - 30,
+                height = $(window).height() - 90;
+
+            var color = d3.scale.category20();
+
+            var force = d3.layout.force()
+                .charge(-80)
+                .linkDistance(function(l) { return l.value * 3; })
+                .size([width, height]);
+
+            var svg = d3.select("body").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            var rootG = svg.append('svg:g');
+
+            function zoom() {
+                rootG.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+            }
+
+            var zoomListener = d3.behavior.zoom().scaleExtent([0.1, 3]).on("zoom", zoom);
+
+            svg.call(zoomListener);
+
+            d3.json("data.json", function(error, graph) {
+
+              force
+                  .nodes(graph.nodes)
+                  .links(graph.links)
+                  .start();
+
+              var link = rootG.selectAll(".link")
+                  .data(graph.links)
+                .enter().append("line")
+                  .attr("class", "link");
+
+              var node = rootG.selectAll(".node")
+                  .data(graph.nodes)
+                .enter().append("circle")
+                  .attr("class", "node")
+                  .attr("r", 5)
+                  .style("fill", function(d) { return color(d.group); })
+                  .call(force.drag);
+
+              node.append("title")
+                  .text(function(d) { return d.name + " (" + d.group_name + ")"; });
+
+              force.on("tick", function() {
+                link.attr("x1", function(d) { return d.source.x; })
+                    .attr("y1", function(d) { return d.source.y; })
+                    .attr("x2", function(d) { return d.target.x; })
+                    .attr("y2", function(d) { return d.target.y; });
+
+                node.attr("cx", function(d) { return d.x; })
+                    .attr("cy", function(d) { return d.y; });
+              });
+            });
+        </script>
+    </body>
+</html>
